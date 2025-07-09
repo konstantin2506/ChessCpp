@@ -2,9 +2,27 @@
 #include "../../include/figure.hpp"
 
 #include <iostream>
+#include <exception>
+#include <string>
+
+#define RESET   "\033[0m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BLUE    "\033[34m"
+#define MAGENTA "\033[35m"
+#define CYAN    "\033[36m"
+#define WHITE   "\033[37m"
 
 using namespace Chess;
 
+static std::string pair_to_str(std::pair<int, int> p){
+    
+    std::string first(1, 'H' - p.second);
+    std::string second = std::to_string(p.first + 1);
+    return first + second;
+}
+ 
 Cell::Cell(int x, int y): x_(x), y_(y), piece_(nullptr), busy_(false), marked_(false){
     int sum = (x_ + y_) % 2;
     if(sum == 0){
@@ -21,19 +39,26 @@ int Cell::get_y() const { return y_; }
 bool Cell::is_empty() const { return busy_ == false; } 
 bool Cell::is_marked() const { return marked_; }
 
+void Cell::set_marked() { marked_ = true; }
+void Cell::set_busy() { busy_ = true; }
+
+
 void Cell::set_piece(Piece* piece){
     if(is_empty()){
         piece_ = piece;
+        busy_ = true;
     }
 }
 
 Piece* Cell::remove_piece(){
     Piece* tmp = piece_;
     piece_ = nullptr;
+    busy_ = false;
     return tmp;
 }
 
 Color Cell::get_color() const { return color_; }
+Piece* Cell::get_piece() const { return piece_; }
 
 Board::Board() : size_(8), base_() {
     base_.resize(size_);
@@ -50,11 +75,11 @@ Board::~Board(){
     Board::clear();
 }
 
-bool Board::is_empty(int x, int y){
+bool Board::is_empty(int x, int y) const {
     return base_[x][y].is_empty();
 }
 
-bool Board::is_marked(int x, int y){
+bool Board::is_marked(int x, int y) const {
     return base_[x][y].is_marked();
 }
 
@@ -68,21 +93,118 @@ void Board::clear(){
 }
 
 void Board::init_pieces() {
-    std::cout << "init peaces\n";
+    Board::init_pawns();
 }
 
-void Board::show_moves(int x, int y){
-    std::cout << "moves are shown" << x << y << "\n";
+void Board::show_moves(int x, int y) {
+    Piece* piece = base_[x][y].get_piece();
+
+    if(piece == nullptr) return;
+    
+    std::string from = pair_to_str(std::make_pair(x, y));
+    std::cout << from + ": \n";
+    auto moves = piece->get_moves(*this);
+    for(auto move: moves){
+        std::cout << pair_to_str(move) << "\n";
+        base_[move.first][move.second].set_marked();
+    }
 }
 
-void Board::print(){
+void Board::print() const {
+    std::cout << "  H G F E D C B A\n";
     for(size_t x = 0; x < size_; x++){
+        std::cout << x+1 << " ";
         for(size_t y = 0; y < size_; y++){
-            Color color = base_[x][y].get_color();
-            char smb = (color == Color::White) ? 'w' : 'b';
-            std::cout << smb;
+            std::string symb;
+            Color color;
+            if(!is_empty(x, y)){
+                Piece* piece = base_[x][y].get_piece();
+                symb = piece->get_symb();
+                color = piece->get_color();
+            }
+            else{
+                color = base_[x][y].get_color();
+                symb = "#";
+            }
+            if(is_marked(x, y)){
+                std::string colored_symb = RED + symb + RESET + " ";
+                std::cout << colored_symb;
+            }
+            else{
+                std::string str_color;
+                if(color == Color::White){
+                    str_color = WHITE;
+                }
+                else{
+                    str_color = BLUE;
+                }
+                std::cout << str_color << symb << RESET << " ";
+            }
         }
         std::cout<< "\n";
     }
 }
+
+Color Board::get_color(int x, int y) const { 
+    Piece* piece = base_[x][y].get_piece();
+    return piece->get_color();
+}
+
+void Board::init_pawns() {
+    try{
+        for(auto y = 0; y < size_; y++){
+            base_[1][y].set_piece(new Pawn(Color::White, 1, y));
+            base_[6][y].set_piece(new Pawn(Color::Black, 6, y));
+        }
+    }
+    catch(const std::exception& e){
+        std::cout << e.what();
+    }
+}
+
+void Board::replace_piece(int_pair from, int_pair to){
+    int x_from = from.first;
+    int y_from = from.second;
+    int x_to = to.first;
+    int y_to = to.second;
+
+    Piece* piece = base_[x_from][y_from].remove_piece();
+    base_[x_to][y_to].set_piece(piece);
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
