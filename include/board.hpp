@@ -67,6 +67,7 @@ public:
 private:
     void init_pawns();
     void init_kings();
+    void init_knights();
     void init_pieces();
 };
 

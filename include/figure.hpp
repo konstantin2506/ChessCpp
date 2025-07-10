@@ -43,4 +43,11 @@ public:
     std::vector<std::pair<int, int>> get_moves(const Board& board) const;
 };
 
+class Knight: public Piece{
+public:
+    Knight(Color color, int x, int y);
+
+    std::vector<std::pair<int, int>> get_moves(const Board& board) const;
+};
+
 }

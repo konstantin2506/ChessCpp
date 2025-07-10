@@ -113,6 +113,7 @@ void Board::unset_moving(){
 void Board::init_pieces() {
     init_pawns();
     init_kings();
+    init_knights();
 }
 
 void Board::unshow_moves(){
@@ -218,6 +219,26 @@ void Board::init_kings(){
     }
 }
 
+void Board::init_knights(){
+    try{
+        std::vector<std::unique_ptr<Piece>> knights;
+        knights.reserve(4);
+        knights.emplace_back(std::make_unique<Knight>(Color::White, 0, 1));
+        knights.emplace_back(std::make_unique<Knight>(Color::White, 0, 6));
+        knights.emplace_back(std::make_unique<Knight>(Color::Black, 7, 1));
+        knights.emplace_back(std::make_unique<Knight>(Color::Black, 7, 6));
+
+        for(int i = 0; i < 4; i++){
+            base_[knights[i]->get_x()][knights[i]->get_y()].set_piece(std::move(knights[i]));
+        }
+    }
+    catch(const std::bad_alloc& e){
+        throw std::runtime_error("Memory allocation failed: " + std::string(e.what()));
+    }
+    catch(const std::exception& e){
+        throw std::runtime_error("Failed to initialize knights: " + std::string(e.what()));
+    }
+}
 
 void Board::replace_piece(int_pair from, int_pair to){
     int x_from = from.first;
