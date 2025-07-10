@@ -7,7 +7,7 @@ using namespace Chess;
 
 Knight::Knight(Color color, int x, int y): Piece{color, x, y, 'k'} {}
 
-std::vector<std::pair<int, int>> Knight::get_moves(const Board& board) const {
+std::vector<std::pair<int, int>> Knight::get_moves(const Board& board) const{
     std::vector<std::pair<int, int>> moves;
     moves.reserve(8);
     Color color = get_color();

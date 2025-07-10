@@ -114,6 +114,9 @@ void Board::init_pieces() {
     init_pawns();
     init_kings();
     init_knights();
+    init_rooks();
+    init_bishops();
+    init_queens();
 }
 
 void Board::unshow_moves(){
@@ -182,6 +185,8 @@ Color Board::get_color(int x, int y) const {
     return piece->get_color();
 }
 
+size_t Board::size() const { return size_; }
+
 void Board::init_pawns() {
     std::vector<std::unique_ptr<Piece>> created_pieces;
     created_pieces.reserve(size_ * 2);
@@ -218,6 +223,61 @@ void Board::init_kings(){
         throw std::runtime_error("Failed to initialize kings: " + std::string(e.what()));
     }
 }
+void Board::init_queens(){
+    try{
+        std::unique_ptr<Piece> w_queen = std::make_unique<Queen>(Color::White, 0, 4);
+        std::unique_ptr<Piece> b_queen = std::make_unique<Queen>(Color::Black, 7, 4);
+
+        base_[0][4].set_piece(std::move(w_queen));
+        base_[7][4].set_piece(std::move(b_queen));
+    }
+    catch(const std::bad_alloc& e){
+        throw std::runtime_error("Memory allocation failed: " + std::string(e.what()));
+    }
+    catch(const std::exception& e){
+        throw std::runtime_error("Failed to initialize queens: " + std::string(e.what()));
+    }
+}
+void Board::init_rooks(){
+    try{
+        std::vector<std::unique_ptr<Piece>> rooks;
+        rooks.reserve(4);
+        rooks.emplace_back(std::make_unique<Rook>(Color::White, 0, 0));
+        rooks.emplace_back(std::make_unique<Rook>(Color::White, 0, 7));
+        rooks.emplace_back(std::make_unique<Rook>(Color::Black, 7, 0));
+        rooks.emplace_back(std::make_unique<Rook>(Color::Black, 7, 7));
+
+        for(int i = 0; i < 4; i++){
+            base_[rooks[i]->get_x()][rooks[i]->get_y()].set_piece(std::move(rooks[i]));
+        }
+    }
+    catch(const std::bad_alloc& e){
+        throw std::runtime_error("Memory allocation failed: " + std::string(e.what()));
+    }
+    catch(const std::exception& e){
+        throw std::runtime_error("Failed to initialize rooks: " + std::string(e.what()));
+    }
+}
+void Board::init_bishops(){
+    try{
+        std::vector<std::unique_ptr<Piece>> bishops;
+        bishops.reserve(4);
+        bishops.emplace_back(std::make_unique<Bishop>(Color::White, 0, 2));
+        bishops.emplace_back(std::make_unique<Bishop>(Color::White, 0, 5));
+        bishops.emplace_back(std::make_unique<Bishop>(Color::Black, 7, 2));
+        bishops.emplace_back(std::make_unique<Bishop>(Color::Black, 7, 5));
+
+        for(int i = 0; i < 4; i++){
+            base_[bishops[i]->get_x()][bishops[i]->get_y()].set_piece(std::move(bishops[i]));
+        }
+    }
+    catch(const std::bad_alloc& e){
+        throw std::runtime_error("Memory allocation failed: " + std::string(e.what()));
+    }
+    catch(const std::exception& e){
+        throw std::runtime_error("Failed to initialize bishops: " + std::string(e.what()));
+    }
+}
 
 void Board::init_knights(){
     try{
@@ -249,6 +309,7 @@ void Board::replace_piece(int_pair from, int_pair to){
     std::unique_ptr<Piece> attacker = base_[x_from][y_from].remove_piece();
     base_[x_to][y_to].remove_piece();
     attacker->move_to(x_to, y_to);
+
     base_[x_to][y_to].set_piece(std::move(attacker));
 
 }

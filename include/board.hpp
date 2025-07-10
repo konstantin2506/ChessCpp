@@ -57,6 +57,7 @@ public:
     void set_moving();
     void unset_moving();
     
+    size_t size() const;
     Color get_color(int x, int y) const;
     bool check_move(int x, int y) const;
     void show_moves(int x, int y);
@@ -69,6 +70,9 @@ private:
     void init_kings();
     void init_knights();
     void init_pieces();
+    void init_rooks();
+    void init_bishops();
+    void init_queens();
 };
 
 }
