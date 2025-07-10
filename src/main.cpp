@@ -1,7 +1,7 @@
-#include "../../include/board.hpp"
-#include "../../include/figure.hpp"
-#include "../../include/game.hpp"
-#include "../../include/player.hpp"
+#include "../include/board.hpp"
+#include "../include/figure.hpp"
+#include "../include/game.hpp"
+#include "../include/player.hpp"
 
 int main(){
     Chess::Player p1{"p1 (white)", Chess::Color::White};

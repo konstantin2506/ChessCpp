@@ -52,7 +52,8 @@ public:
     bool is_empty(int x, int y) const;
     bool is_marked(int x, int y) const;
     bool is_moving() const;
-    
+    bool is_defended(int x, int y) const;
+
     void set_moving();
     void unset_moving();
     
@@ -65,6 +66,7 @@ public:
     void replace_piece(int_pair from, int_pair to);
 private:
     void init_pawns();
+    void init_kings();
     void init_pieces();
 };
 

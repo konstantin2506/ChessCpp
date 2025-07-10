@@ -36,4 +36,11 @@ public:
     
 };
 
+class King: public Piece{
+public:
+    King(Color color, int x, int y);
+
+    std::vector<std::pair<int, int>> get_moves(const Board& board) const;
+};
+
 }

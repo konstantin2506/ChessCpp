@@ -85,6 +85,9 @@ bool Board::check_move(int x, int y) const {
     return false;
 
 }
+bool Board::is_defended(int x, int y) const{ // TODO
+    return false;
+}
 
 bool Board::is_moving() const {
     return moving_;
@@ -108,7 +111,8 @@ void Board::unset_moving(){
 }
 
 void Board::init_pieces() {
-    Board::init_pawns();
+    init_pawns();
+    init_kings();
 }
 
 void Board::unshow_moves(){
@@ -178,16 +182,42 @@ Color Board::get_color(int x, int y) const {
 }
 
 void Board::init_pawns() {
+    std::vector<std::unique_ptr<Piece>> created_pieces;
+    created_pieces.reserve(size_ * 2);
     try{
-        for(auto y = 0; y < size_; y++){
-            base_[1][y].set_piece(std::make_unique<Pawn>(Color::White, 1, y));
-            base_[6][y].set_piece(std::make_unique<Pawn>(Color::Black, 6, y));
+        for(int y = 0; y < size_; y++){
+            created_pieces.emplace_back(std::make_unique<Pawn>(Color::White, 1, y));
+            created_pieces.emplace_back(std::make_unique<Pawn>(Color::Black, 6, y));
+        }
+        for(int y = 0; y < size_; y++){
+            base_[1][y].set_piece(std::move(created_pieces[y * 2]));
+            base_[6][y].set_piece(std::move(created_pieces[y * 2 + 1]));
         }
     }
+    catch(const std::bad_alloc& e){
+        throw std::runtime_error("Memory allocation failed: " + std::string(e.what()));
+    }
     catch(const std::exception& e){
-        std::cout << e.what();
+        throw std::runtime_error("Failed to initialize pawns: " + std::string(e.what()));
     }
 }
+
+void Board::init_kings(){
+    try{
+        std::unique_ptr<Piece> w_king = std::make_unique<King>(Color::White, 0, 3);
+        std::unique_ptr<Piece> b_king = std::make_unique<King>(Color::Black, 7, 3);
+
+        base_[0][3].set_piece(std::move(w_king));
+        base_[7][3].set_piece(std::move(b_king));
+    }
+    catch(const std::bad_alloc& e){
+        throw std::runtime_error("Memory allocation failed: " + std::string(e.what()));
+    }
+    catch(const std::exception& e){
+        throw std::runtime_error("Failed to initialize kings: " + std::string(e.what()));
+    }
+}
+
 
 void Board::replace_piece(int_pair from, int_pair to){
     int x_from = from.first;
@@ -197,8 +227,8 @@ void Board::replace_piece(int_pair from, int_pair to){
 
     std::unique_ptr<Piece> attacker = base_[x_from][y_from].remove_piece();
     base_[x_to][y_to].remove_piece();
-    base_[x_to][y_to].set_piece(std::move(attacker));
     attacker->move_to(x_to, y_to);
+    base_[x_to][y_to].set_piece(std::move(attacker));
 
 }
 
