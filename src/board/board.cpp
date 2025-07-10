@@ -4,6 +4,7 @@
 #include <iostream>
 #include <exception>
 #include <string>
+#include <memory>
 
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
@@ -41,26 +42,28 @@ bool Cell::is_marked() const { return marked_; }
 
 void Cell::set_marked() { marked_ = true; }
 void Cell::set_busy() { busy_ = true; }
+void Cell::unset_marked() { marked_ = false; }
+void Cell::unset_busy() { busy_ = false; }
 
 
-void Cell::set_piece(Piece* piece){
+void Cell::set_piece(std::unique_ptr<Piece> piece){
     if(is_empty()){
-        piece_ = piece;
+        piece_ = std::move(piece);
         busy_ = true;
     }
 }
 
-Piece* Cell::remove_piece(){
-    Piece* tmp = piece_;
+std::unique_ptr<Piece> Cell::remove_piece(){
+    std::unique_ptr<Piece> tmp = std::move(piece_);
     piece_ = nullptr;
     busy_ = false;
     return tmp;
 }
 
 Color Cell::get_color() const { return color_; }
-Piece* Cell::get_piece() const { return piece_; }
+const Piece* Cell::get_piece() const { return piece_.get(); }
 
-Board::Board() : size_(8), base_() {
+Board::Board() : size_(8), base_(), moves_(), moving_(false) {
     base_.resize(size_);
     for (auto& row : base_) {
         row.reserve(size_);
@@ -71,8 +74,20 @@ Board::Board() : size_(8), base_() {
     init_pieces();
 }
 
-Board::~Board(){
-    Board::clear();
+
+bool Board::check_move(int x, int y) const {
+    int_pair target = std::make_pair(x,y);
+    for(auto move: moves_){
+        if(move == target){
+            return true;
+        }
+    }
+    return false;
+
+}
+
+bool Board::is_moving() const {
+    return moving_;
 }
 
 bool Board::is_empty(int x, int y) const {
@@ -83,31 +98,43 @@ bool Board::is_marked(int x, int y) const {
     return base_[x][y].is_marked();
 }
 
-void Board::clear(){
-    for(size_t x = 0; x < size_; x++){
-        for(size_t y = 0; y < size_; y++){  
-            delete base_[x][y].remove_piece();
-        }
-    }
-        
+
+void Board::set_moving(){
+    moving_ = true;
+}
+
+void Board::unset_moving(){
+    moving_ = false;
 }
 
 void Board::init_pieces() {
     Board::init_pawns();
 }
 
+void Board::unshow_moves(){
+    for(auto move: moves_){
+        base_[move.first][move.second].unset_marked();
+    }
+    base_[marked_figure_.first][marked_figure_.second].unset_marked();
+    unset_moving();
+}
+
 void Board::show_moves(int x, int y) {
-    Piece* piece = base_[x][y].get_piece();
+    unshow_moves();
+
+    const Piece* piece = base_[x][y].get_piece();
 
     if(piece == nullptr) return;
-    
+    base_[x][y].set_marked();
+    marked_figure_ = std::make_pair(x,y);
     std::string from = pair_to_str(std::make_pair(x, y));
     std::cout << from + ": \n";
-    auto moves = piece->get_moves(*this);
-    for(auto move: moves){
+    moves_ = piece->get_moves(*this);
+    for(auto move: moves_){
         std::cout << pair_to_str(move) << "\n";
         base_[move.first][move.second].set_marked();
     }
+    set_moving();
 }
 
 void Board::print() const {
@@ -118,7 +145,7 @@ void Board::print() const {
             std::string symb;
             Color color;
             if(!is_empty(x, y)){
-                Piece* piece = base_[x][y].get_piece();
+                const Piece* piece = base_[x][y].get_piece();
                 symb = piece->get_symb();
                 color = piece->get_color();
             }
@@ -146,15 +173,15 @@ void Board::print() const {
 }
 
 Color Board::get_color(int x, int y) const { 
-    Piece* piece = base_[x][y].get_piece();
+    const Piece* piece = base_[x][y].get_piece();
     return piece->get_color();
 }
 
 void Board::init_pawns() {
     try{
         for(auto y = 0; y < size_; y++){
-            base_[1][y].set_piece(new Pawn(Color::White, 1, y));
-            base_[6][y].set_piece(new Pawn(Color::Black, 6, y));
+            base_[1][y].set_piece(std::make_unique<Pawn>(Color::White, 1, y));
+            base_[6][y].set_piece(std::make_unique<Pawn>(Color::Black, 6, y));
         }
     }
     catch(const std::exception& e){
@@ -168,8 +195,10 @@ void Board::replace_piece(int_pair from, int_pair to){
     int x_to = to.first;
     int y_to = to.second;
 
-    Piece* piece = base_[x_from][y_from].remove_piece();
-    base_[x_to][y_to].set_piece(piece);
+    std::unique_ptr<Piece> attacker = base_[x_from][y_from].remove_piece();
+    base_[x_to][y_to].remove_piece();
+    base_[x_to][y_to].set_piece(std::move(attacker));
+    attacker->move_to(x_to, y_to);
 
 }
 
